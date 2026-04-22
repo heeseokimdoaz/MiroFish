@@ -369,7 +369,7 @@ const startBuildGraph = async () => {
 const startGraphPolling = () => {
   addLog('Started polling for graph data...')
   fetchGraphData()
-  graphPollTimer = setInterval(fetchGraphData, 10000)
+  graphPollTimer = setInterval(fetchGraphData, 60000)
 }
 
 const fetchGraphData = async () => {

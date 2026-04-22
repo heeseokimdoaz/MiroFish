@@ -720,6 +720,7 @@ class OasisProfileGenerator:
 - 한국어로 작성하세요 (gender 필드만 영문 male/female 사용)
 - 내용은 엔티티 정보와 일치해야 합니다
 - age는 유효한 정수, gender는 "male" 또는 "female"이어야 합니다
+- 정당 소속이 있는 인물의 경우, persona에 해당 정당에 대한 충성과 지지 성향을 반드시 포함하세요. 같은 당 동료를 공격하거나 비판하는 성향은 절대 부여하지 마세요. 비판 대상은 상대 정당이어야 합니다.
 """
 
     def _build_group_persona_prompt(
