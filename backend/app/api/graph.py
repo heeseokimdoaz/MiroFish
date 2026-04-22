@@ -163,47 +163,61 @@ def generate_ontology():
                 "error": "请提供模拟需求描述 (simulation_requirement)"
             }), 400
         
-        # 获取上传的文件
+        # raw_text 파라미터 확인 (Oracle Eye 연동 등 외부 텍스트 직접 전달)
+        raw_text = request.form.get('raw_text', '')
+
+        # 파일 업로드 또는 raw_text 중 하나는 필요
         uploaded_files = request.files.getlist('files')
-        if not uploaded_files or all(not f.filename for f in uploaded_files):
+        has_files = uploaded_files and any(f.filename for f in uploaded_files)
+
+        if not has_files and not raw_text:
             return jsonify({
                 "success": False,
-                "error": "请至少上传一个文档文件"
+                "error": "파일을 업로드하거나 raw_text를 제공해주세요"
             }), 400
-        
-        # 创建项目
+
+        # 프로젝트 생성
         project = ProjectManager.create_project(name=project_name)
         project.simulation_requirement = simulation_requirement
-        logger.info(f"创建项目: {project.project_id}")
-        
-        # 保存文件并提取文本
+        logger.info(f"프로젝트 생성: {project.project_id}")
+
         document_texts = []
         all_text = ""
-        
-        for file in uploaded_files:
-            if file and file.filename and allowed_file(file.filename):
-                # 保存文件到项目目录
-                file_info = ProjectManager.save_file_to_project(
-                    project.project_id, 
-                    file, 
-                    file.filename
-                )
-                project.files.append({
-                    "filename": file_info["original_filename"],
-                    "size": file_info["size"]
-                })
-                
-                # 提取文本
-                text = FileParser.extract_text(file_info["path"])
-                text = TextProcessor.preprocess_text(text)
-                document_texts.append(text)
-                all_text += f"\n\n=== {file_info['original_filename']} ===\n{text}"
-        
+
+        # raw_text가 있으면 직접 사용
+        if raw_text:
+            text = TextProcessor.preprocess_text(raw_text)
+            document_texts.append(text)
+            all_text = text
+            project.files.append({
+                "filename": "oracle_eye_data.txt",
+                "size": len(raw_text.encode('utf-8'))
+            })
+            logger.info(f"raw_text 시드 데이터 수신: {len(raw_text)} 자")
+
+        # 파일이 있으면 기존 로직으로 처리
+        if has_files:
+            for file in uploaded_files:
+                if file and file.filename and allowed_file(file.filename):
+                    file_info = ProjectManager.save_file_to_project(
+                        project.project_id,
+                        file,
+                        file.filename
+                    )
+                    project.files.append({
+                        "filename": file_info["original_filename"],
+                        "size": file_info["size"]
+                    })
+                    text = FileParser.extract_text(file_info["path"])
+                    text = TextProcessor.preprocess_text(text)
+                    document_texts.append(text)
+                    all_text += f"\n\n=== {file_info['original_filename']} ===\n{text}"
+
         if not document_texts:
             ProjectManager.delete_project(project.project_id)
             return jsonify({
                 "success": False,
-                "error": "没有成功处理任何文档，请检查文件格式"
+                "error": "유효한 텍스트 데이터가 없습니다"
             }), 400
         
         # 保存提取的文本

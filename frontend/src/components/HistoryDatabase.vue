@@ -13,7 +13,7 @@
     <!-- 标题区域 -->
     <div class="section-header">
       <div class="section-line"></div>
-      <span class="section-title">推演记录</span>
+      <span class="section-title">추론 기록</span>
       <div class="section-line"></div>
     </div>
 
@@ -36,16 +36,16 @@
             <span 
               class="status-icon" 
               :class="{ available: project.project_id, unavailable: !project.project_id }"
-              title="图谱构建"
+              title="그래프 구축"
             >◇</span>
             <span 
               class="status-icon available" 
-              title="环境搭建"
+              title="환경 설정"
             >◈</span>
             <span 
               class="status-icon" 
               :class="{ available: project.report_id, unavailable: !project.report_id }"
-              title="分析报告"
+              title="분석 리포트"
             >◆</span>
           </div>
         </div>
@@ -67,13 +67,13 @@
             </div>
             <!-- 如果有更多文件，显示提示 -->
             <div v-if="project.files.length > 3" class="files-more">
-              +{{ project.files.length - 3 }} 个文件
+              +{{ project.files.length - 3 }} 개 파일
             </div>
           </div>
           <!-- 无文件时的占位 -->
           <div class="files-empty" v-else>
             <span class="empty-file-icon">◇</span>
-            <span class="empty-file-text">暂无文件</span>
+            <span class="empty-file-text">파일 없음</span>
           </div>
         </div>
 
@@ -102,7 +102,7 @@
     <!-- 加载状态 -->
     <div v-if="loading" class="loading-state">
       <span class="loading-spinner"></span>
-      <span class="loading-text">加载中...</span>
+      <span class="loading-text">로딩 중...</span>
     </div>
 
     <!-- 历史回放详情弹窗 -->
@@ -126,27 +126,27 @@
             <div class="modal-body">
               <!-- 模拟需求 -->
               <div class="modal-section">
-                <div class="modal-label">模拟需求</div>
-                <div class="modal-requirement">{{ selectedProject.simulation_requirement || '无' }}</div>
+                <div class="modal-label">시뮬레이션 요구사항</div>
+                <div class="modal-requirement">{{ selectedProject.simulation_requirement || '없음' }}</div>
               </div>
 
               <!-- 文件列表 -->
               <div class="modal-section">
-                <div class="modal-label">关联文件</div>
+                <div class="modal-label">연결된 파일</div>
                 <div class="modal-files" v-if="selectedProject.files && selectedProject.files.length > 0">
                   <div v-for="(file, index) in selectedProject.files" :key="index" class="modal-file-item">
                     <span class="file-tag" :class="getFileType(file.filename)">{{ getFileTypeLabel(file.filename) }}</span>
                     <span class="modal-file-name">{{ file.filename }}</span>
                   </div>
                 </div>
-                <div class="modal-empty" v-else>暂无关联文件</div>
+                <div class="modal-empty" v-else>연결된 파일 없음</div>
               </div>
             </div>
 
             <!-- 推演回放分割线 -->
             <div class="modal-divider">
               <span class="divider-line"></span>
-              <span class="divider-text">推演回放</span>
+              <span class="divider-text">추론 재생</span>
               <span class="divider-line"></span>
             </div>
 
@@ -159,7 +159,7 @@
               >
                 <span class="btn-step">Step1</span>
                 <span class="btn-icon">◇</span>
-                <span class="btn-text">图谱构建</span>
+                <span class="btn-text">그래프 구축</span>
               </button>
               <button 
                 class="modal-btn btn-simulation" 
@@ -167,7 +167,7 @@
               >
                 <span class="btn-step">Step2</span>
                 <span class="btn-icon">◈</span>
-                <span class="btn-text">环境搭建</span>
+                <span class="btn-text">환경 설정</span>
               </button>
               <button 
                 class="modal-btn btn-report" 
@@ -176,12 +176,12 @@
               >
                 <span class="btn-step">Step4</span>
                 <span class="btn-icon">◆</span>
-                <span class="btn-text">分析报告</span>
+                <span class="btn-text">분석 리포트</span>
               </button>
             </div>
             <!-- 不可回放提示 -->
             <div class="modal-playback-hint">
-              <span class="hint-text">Step3「开始模拟」与 Step5「深度互动」需在运行中启动，不支持历史回放</span>
+              <span class="hint-text">Step3 '시뮬레이션 시작' 및 Step5 '심층 상호작용'은 실행 중에만 시작 가능하며, 기록 재생을 지원하지 않습니다</span>
             </div>
           </div>
         </div>
@@ -204,11 +204,11 @@ const loading = ref(true)
 const isExpanded = ref(false)
 const hoveringCard = ref(null)
 const historyContainer = ref(null)
-const selectedProject = ref(null)  // 当前选中的项目（用于弹窗）
+const selectedProject = ref(null)  // 현재 선택된 프로젝트 (팝업용)
 let observer = null
-let isAnimating = false  // 动画锁，防止闪烁
-let expandDebounceTimer = null  // 防抖定时器
-let pendingState = null  // 记录待执行的目标状态
+let isAnimating = false  // 애니메이션 락, 깜빡임 방지
+let expandDebounceTimer = null  // 디바운스 타이머
+let pendingState = null  // 실행 대기 중인 목표 상태 기록
 
 // 卡片布局配置 - 调整为更宽的比例
 const CARDS_PER_ROW = 4
@@ -337,7 +337,7 @@ const truncateText = (text, maxLength) => {
 
 // 从模拟需求生成标题（取前20字）
 const getSimulationTitle = (requirement) => {
-  if (!requirement) return '未命名模拟'
+  if (!requirement) return '이름 없는 시뮬레이션'
   const title = requirement.slice(0, 20)
   return requirement.length > 20 ? title + '...' : title
 }
@@ -353,8 +353,8 @@ const formatSimulationId = (simulationId) => {
 const formatRounds = (simulation) => {
   const current = simulation.current_round || 0
   const total = simulation.total_rounds || 0
-  if (total === 0) return '未开始'
-  return `${current}/${total} 轮`
+  if (total === 0) return '시작 전'
+  return `${current}/${total} 라운드`
 }
 
 // 获取文件类型（用于样式）
@@ -382,7 +382,7 @@ const getFileTypeLabel = (filename) => {
 
 // 截断文件名（保留扩展名）
 const truncateFilename = (filename, maxLength) => {
-  if (!filename) return '未知文件'
+  if (!filename) return '알 수 없는 파일'
   if (filename.length <= maxLength) return filename
   
   const ext = filename.includes('.') ? '.' + filename.split('.').pop() : ''
@@ -443,7 +443,7 @@ const loadHistory = async () => {
       projects.value = response.data || []
     }
   } catch (error) {
-    console.error('加载历史项目失败:', error)
+    console.error('기존 프로젝트 로딩 실패:', error)
     projects.value = []
   } finally {
     loading.value = false
@@ -721,9 +721,9 @@ onUnmounted(() => {
 }
 
 /* 不同功能的颜色 */
-.status-icon:nth-child(1).available { color: #3B82F6; } /* 图谱构建 - 蓝色 */
-.status-icon:nth-child(2).available { color: #F59E0B; } /* 环境搭建 - 橙色 */
-.status-icon:nth-child(3).available { color: #10B981; } /* 分析报告 - 绿色 */
+.status-icon:nth-child(1).available { color: #3B82F6; } /* 그래프 구축 - 파란색 */
+.status-icon:nth-child(2).available { color: #F59E0B; } /* 환경 설정 - 주황색 */
+.status-icon:nth-child(3).available { color: #10B981; } /* 분석 리포트 - 초록색 */
 
 .status-icon.unavailable {
   color: #D1D5DB;
@@ -745,9 +745,9 @@ onUnmounted(() => {
 }
 
 /* 进度状态颜色 */
-.card-progress.completed { color: #10B981; }    /* 已完成 - 绿色 */
-.card-progress.in-progress { color: #F59E0B; }  /* 进行中 - 橙色 */
-.card-progress.not-started { color: #9CA3AF; }  /* 未开始 - 灰色 */
+.card-progress.completed { color: #10B981; }    /* 완료 - 초록색 */
+.card-progress.in-progress { color: #F59E0B; }  /* 진행 중 - 주황색 */
+.card-progress.not-started { color: #9CA3AF; }  /* 시작 전 - 회색 */
 .card-status.pending { color: #9CA3AF; }
 
 /* 文件列表区域 */
