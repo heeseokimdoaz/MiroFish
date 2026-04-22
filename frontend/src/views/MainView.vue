@@ -15,7 +15,7 @@
             :class="{ active: viewMode === mode }"
             @click="viewMode = mode"
           >
-            {{ { graph: '图谱', split: '双栏', workbench: '工作台' }[mode] }}
+            {{ { graph: '그래프', split: '양분할', workbench: '작업대' }[mode] }}
           </button>
         </div>
       </div>
@@ -48,8 +48,8 @@
 
       <!-- Right Panel: Step Components -->
       <div class="panel-wrapper right" :style="rightPanelStyle">
-        <!-- Step 1: 图谱构建 -->
-        <Step1GraphBuild 
+        <!-- Step 1: 그래프 구축 -->
+        <Step1GraphBuild
           v-if="currentStep === 1"
           :currentPhase="currentPhase"
           :projectData="projectData"
@@ -59,14 +59,44 @@
           :systemLogs="systemLogs"
           @next-step="handleNextStep"
         />
-        <!-- Step 2: 环境搭建 -->
+        <!-- Step 2: 환경 구축 -->
         <Step2EnvSetup
           v-else-if="currentStep === 2"
+          :simulationId="simulationId"
           :projectData="projectData"
           :graphData="graphData"
           :systemLogs="systemLogs"
           @go-back="handleGoBack"
           @next-step="handleNextStep"
+          @add-log="addLog"
+        />
+        <!-- Step 3: 시뮬레이션 시작 -->
+        <Step3Simulation
+          v-else-if="currentStep === 3"
+          :simulationId="simulationId"
+          :maxRounds="maxRounds"
+          :minutesPerRound="minutesPerRound"
+          :projectData="projectData"
+          :graphData="graphData"
+          :systemLogs="systemLogs"
+          @go-back="handleGoBack"
+          @next-step="handleNextStep"
+          @add-log="addLog"
+        />
+        <!-- Step 4: 리포트 생성 -->
+        <Step4Report
+          v-else-if="currentStep === 4"
+          :reportId="reportId"
+          :simulationId="simulationId"
+          :systemLogs="systemLogs"
+          @next-step="handleNextStep"
+          @add-log="addLog"
+        />
+        <!-- Step 5: 심층 상호작용 -->
+        <Step5Interaction
+          v-else-if="currentStep === 5"
+          :reportId="reportId"
+          :simulationId="simulationId"
           @add-log="addLog"
         />
       </div>
@@ -80,7 +110,11 @@ import { useRoute, useRouter } from 'vue-router'
 import GraphPanel from '../components/GraphPanel.vue'
 import Step1GraphBuild from '../components/Step1GraphBuild.vue'
 import Step2EnvSetup from '../components/Step2EnvSetup.vue'
+import Step3Simulation from '../components/Step3Simulation.vue'
+import Step4Report from '../components/Step4Report.vue'
+import Step5Interaction from '../components/Step5Interaction.vue'
 import { generateOntology, getProject, buildGraph, getTaskStatus, getGraphData } from '../api/graph'
+import { createSimulation } from '../api/simulation'
 import { getPendingUpload, clearPendingUpload } from '../store/pendingUpload'
 
 const route = useRoute()
@@ -90,8 +124,8 @@ const router = useRouter()
 const viewMode = ref('split') // graph | split | workbench
 
 // Step State
-const currentStep = ref(1) // 1: 图谱构建, 2: 环境搭建, 3: 开始模拟, 4: 报告生成, 5: 深度互动
-const stepNames = ['图谱构建', '环境搭建', '开始模拟', '报告生成', '深度互动']
+const currentStep = ref(1) // 1: 그래프 구축, 2: 환경 구축, 3: 시뮬레이션 시작, 4: 리포트 생성, 5: 심층 상호작용
+const stepNames = ['그래프 구축', '환경 구축', '시뮬레이션 시작', '리포트 생성', '심층 상호작용']
 
 // Data State
 const currentProjectId = ref(route.params.projectId)
@@ -104,6 +138,12 @@ const currentPhase = ref(-1) // -1: Upload, 0: Ontology, 1: Build, 2: Complete
 const ontologyProgress = ref(null)
 const buildProgress = ref(null)
 const systemLogs = ref([])
+
+// Simulation State
+const simulationId = ref(null)
+const reportId = ref(null)
+const maxRounds = ref(null)
+const minutesPerRound = ref(30)
 
 // Polling timers
 let pollTimer = null
@@ -156,22 +196,59 @@ const toggleMaximize = (target) => {
   }
 }
 
-const handleNextStep = (params = {}) => {
-  if (currentStep.value < 5) {
-    currentStep.value++
-    addLog(`进入 Step ${currentStep.value}: ${stepNames[currentStep.value - 1]}`)
-    
-    // 如果是从 Step 2 进入 Step 3，记录模拟轮数配置
-    if (currentStep.value === 3 && params.maxRounds) {
-      addLog(`自定义模拟轮数: ${params.maxRounds} 轮`)
+const handleNextStep = async (params = {}) => {
+  if (currentStep.value >= 5) return
+
+  // Step1 → Step2: simulation 인스턴스 생성
+  if (currentStep.value === 1) {
+    if (!projectData.value?.project_id) {
+      addLog('Error: No project data available')
+      return
+    }
+    try {
+      addLog('시뮬레이션 인스턴스 생성 중...')
+      const res = await createSimulation({
+        project_id: projectData.value.project_id,
+        graph_id: projectData.value.graph_id
+      })
+      if (res.success && res.data) {
+        simulationId.value = res.data.simulation_id
+        addLog(`✓ 시뮬레이션 인스턴스 생성 완료: ${res.data.simulation_id}`)
+      } else {
+        addLog(`✗ 시뮬레이션 인스턴스 생성 실패: ${res.error || '알 수 없는 오류'}`)
+        return
+      }
+    } catch (err) {
+      addLog(`✗ 시뮬레이션 인스턴스 생성 오류: ${err.message}`)
+      return
     }
   }
+
+  // Step2 → Step3: 시뮬레이션 라운드 설정 저장
+  if (currentStep.value === 2) {
+    if (params.maxRounds) {
+      maxRounds.value = params.maxRounds
+      addLog(`사용자 지정 시뮬레이션 라운드: ${params.maxRounds} 라운드`)
+    }
+    // simulationConfig에서 minutesPerRound 가져오기 (Step2에서 전달된 경우)
+    if (params.minutesPerRound) {
+      minutesPerRound.value = params.minutesPerRound
+    }
+  }
+
+  // Step3 → Step4: 리포트 ID 저장
+  if (currentStep.value === 3 && params.reportId) {
+    reportId.value = params.reportId
+  }
+
+  currentStep.value++
+  addLog(`Step ${currentStep.value} 진입: ${stepNames[currentStep.value - 1]}`)
 }
 
 const handleGoBack = () => {
   if (currentStep.value > 1) {
     currentStep.value--
-    addLog(`返回 Step ${currentStep.value}: ${stepNames[currentStep.value - 1]}`)
+    addLog(`Step ${currentStep.value} 복귀: ${stepNames[currentStep.value - 1]}`)
   }
 }
 

@@ -670,7 +670,7 @@ class OasisProfileGenerator:
     
     def _get_system_prompt(self, is_individual: bool) -> str:
         """获取系统提示词"""
-        base_prompt = "你是社交媒体用户画像生成专家。生成详细、真实的人设用于舆论模拟,最大程度还原已有现实情况。必须返回有效的JSON格式，所有字符串值不能包含未转义的换行符。使用中文。"
+        base_prompt = "당신은 소셜 미디어 사용자 프로필 생성 전문가입니다. 여론 시뮬레이션을 위해 상세하고 현실적인 페르소나를 생성하며, 기존 현실 상황을 최대한 반영합니다. 반드시 유효한 JSON 형식으로 반환하고, 모든 문자열 값에 이스케이프되지 않은 줄바꿈을 포함하지 마세요. 한국어로 작성하세요."
         return base_prompt
     
     def _build_individual_persona_prompt(
@@ -683,43 +683,43 @@ class OasisProfileGenerator:
     ) -> str:
         """构建个人实体的详细人设提示词"""
         
-        attrs_str = json.dumps(entity_attributes, ensure_ascii=False) if entity_attributes else "无"
-        context_str = context[:3000] if context else "无额外上下文"
-        
-        return f"""为实体生成详细的社交媒体用户人设,最大程度还原已有现实情况。
+        attrs_str = json.dumps(entity_attributes, ensure_ascii=False) if entity_attributes else "없음"
+        context_str = context[:3000] if context else "추가 컨텍스트 없음"
 
-实体名称: {entity_name}
-实体类型: {entity_type}
-实体摘要: {entity_summary}
-实体属性: {attrs_str}
+        return f"""엔티티의 상세한 소셜 미디어 사용자 페르소나를 생성하세요. 기존 현실 상황을 최대한 반영합니다.
 
-上下文信息:
+엔티티 이름: {entity_name}
+엔티티 유형: {entity_type}
+엔티티 요약: {entity_summary}
+엔티티 속성: {attrs_str}
+
+컨텍스트 정보:
 {context_str}
 
-请生成JSON，包含以下字段:
+다음 필드를 포함하는 JSON을 생성하세요:
 
-1. bio: 社交媒体简介，200字
-2. persona: 详细人设描述（2000字的纯文本），需包含:
-   - 基本信息（年龄、职业、教育背景、所在地）
-   - 人物背景（重要经历、与事件的关联、社会关系）
-   - 性格特征（MBTI类型、核心性格、情绪表达方式）
-   - 社交媒体行为（发帖频率、内容偏好、互动风格、语言特点）
-   - 立场观点（对话题的态度、可能被激怒/感动的内容）
-   - 独特特征（口头禅、特殊经历、个人爱好）
-   - 个人记忆（人设的重要部分，要介绍这个个体与事件的关联，以及这个个体在事件中的已有动作与反应）
-3. age: 年龄数字（必须是整数）
-4. gender: 性别，必须是英文: "male" 或 "female"
-5. mbti: MBTI类型（如INTJ、ENFP等）
-6. country: 国家（使用中文，如"中国"）
-7. profession: 职业
-8. interested_topics: 感兴趣话题数组
+1. bio: 소셜 미디어 소개, 200자
+2. persona: 상세 페르소나 설명 (2000자 순수 텍스트), 포함 내용:
+   - 기본 정보 (나이, 직업, 학력, 거주지)
+   - 인물 배경 (주요 경험, 이벤트와의 관련성, 사회적 관계)
+   - 성격 특성 (MBTI 유형, 핵심 성격, 감정 표현 방식)
+   - 소셜 미디어 행동 (게시 빈도, 콘텐츠 선호, 상호작용 스타일, 언어 특징)
+   - 입장과 관점 (주제에 대한 태도, 분노/감동을 유발할 수 있는 콘텐츠)
+   - 고유 특성 (말버릇, 특별한 경험, 개인 취미)
+   - 개인 기억 (이 개인과 이벤트의 관련성, 이벤트에서의 기존 행동과 반응)
+3. age: 나이 숫자 (반드시 정수)
+4. gender: 성별, 반드시 영문: "male" 또는 "female"
+5. mbti: MBTI 유형 (예: INTJ, ENFP 등)
+6. country: 국가 (한국어로, 예: "한국")
+7. profession: 직업
+8. interested_topics: 관심 주제 배열
 
-重要:
-- 所有字段值必须是字符串或数字，不要使用换行符
-- persona必须是一段连贯的文字描述
-- 使用中文（除了gender字段必须用英文male/female）
-- 内容要与实体信息保持一致
-- age必须是有效的整数，gender必须是"male"或"female"
+중요:
+- 모든 필드 값은 문자열 또는 숫자여야 하며, 줄바꿈을 사용하지 마세요
+- persona는 하나의 연속적인 텍스트 설명이어야 합니다
+- 한국어로 작성하세요 (gender 필드만 영문 male/female 사용)
+- 내용은 엔티티 정보와 일치해야 합니다
+- age는 유효한 정수, gender는 "male" 또는 "female"이어야 합니다
 """
 
     def _build_group_persona_prompt(
@@ -732,43 +732,43 @@ class OasisProfileGenerator:
     ) -> str:
         """构建群体/机构实体的详细人设提示词"""
         
-        attrs_str = json.dumps(entity_attributes, ensure_ascii=False) if entity_attributes else "无"
-        context_str = context[:3000] if context else "无额外上下文"
-        
-        return f"""为机构/群体实体生成详细的社交媒体账号设定,最大程度还原已有现实情况。
+        attrs_str = json.dumps(entity_attributes, ensure_ascii=False) if entity_attributes else "없음"
+        context_str = context[:3000] if context else "추가 컨텍스트 없음"
 
-实体名称: {entity_name}
-实体类型: {entity_type}
-实体摘要: {entity_summary}
-实体属性: {attrs_str}
+        return f"""기관/그룹 엔티티의 상세한 소셜 미디어 계정 설정을 생성하세요. 기존 현실 상황을 최대한 반영합니다.
 
-上下文信息:
+엔티티 이름: {entity_name}
+엔티티 유형: {entity_type}
+엔티티 요약: {entity_summary}
+엔티티 속성: {attrs_str}
+
+컨텍스트 정보:
 {context_str}
 
-请生成JSON，包含以下字段:
+다음 필드를 포함하는 JSON을 생성하세요:
 
-1. bio: 官方账号简介，200字，专业得体
-2. persona: 详细账号设定描述（2000字的纯文本），需包含:
-   - 机构基本信息（正式名称、机构性质、成立背景、主要职能）
-   - 账号定位（账号类型、目标受众、核心功能）
-   - 发言风格（语言特点、常用表达、禁忌话题）
-   - 发布内容特点（内容类型、发布频率、活跃时间段）
-   - 立场态度（对核心话题的官方立场、面对争议的处理方式）
-   - 特殊说明（代表的群体画像、运营习惯）
-   - 机构记忆（机构人设的重要部分，要介绍这个机构与事件的关联，以及这个机构在事件中的已有动作与反应）
-3. age: 固定填30（机构账号的虚拟年龄）
-4. gender: 固定填"other"（机构账号使用other表示非个人）
-5. mbti: MBTI类型，用于描述账号风格，如ISTJ代表严谨保守
-6. country: 国家（使用中文，如"中国"）
-7. profession: 机构职能描述
-8. interested_topics: 关注领域数组
+1. bio: 공식 계정 소개, 200자, 전문적이고 격식 있게
+2. persona: 상세 계정 설정 설명 (2000자 순수 텍스트), 포함 내용:
+   - 기관 기본 정보 (정식 명칭, 기관 성격, 설립 배경, 주요 기능)
+   - 계정 포지셔닝 (계정 유형, 대상 수용자, 핵심 기능)
+   - 발언 스타일 (언어 특징, 자주 쓰는 표현, 금기 주제)
+   - 게시 콘텐츠 특징 (콘텐츠 유형, 게시 빈도, 활동 시간대)
+   - 입장과 태도 (핵심 주제에 대한 공식 입장, 논란 대응 방식)
+   - 특별 설명 (대표하는 그룹 프로필, 운영 습관)
+   - 기관 기억 (이 기관과 이벤트의 관련성, 이벤트에서의 기존 행동과 반응)
+3. age: 고정 30 (기관 계정의 가상 나이)
+4. gender: 고정 "other" (기관 계정은 other로 비개인 표시)
+5. mbti: MBTI 유형, 계정 스타일 설명용 (예: ISTJ는 엄격하고 보수적)
+6. country: 국가 (한국어로, 예: "한국")
+7. profession: 기관 직능 설명
+8. interested_topics: 관심 분야 배열
 
-重要:
-- 所有字段值必须是字符串或数字，不允许null值
-- persona必须是一段连贯的文字描述，不要使用换行符
-- 使用中文（除了gender字段必须用英文"other"）
-- age必须是整数30，gender必须是字符串"other"
-- 机构账号发言要符合其身份定位"""
+중요:
+- 모든 필드 값은 문자열 또는 숫자여야 하며, null 값 불허
+- persona는 하나의 연속적인 텍스트 설명이며, 줄바꿈을 사용하지 마세요
+- 한국어로 작성하세요 (gender 필드만 영문 "other" 사용)
+- age는 정수 30, gender는 문자열 "other"이어야 합니다
+- 기관 계정 발언은 해당 기관의 정체성과 일치해야 합니다"""
     
     def _generate_profile_rule_based(
         self,

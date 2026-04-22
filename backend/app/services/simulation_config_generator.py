@@ -584,7 +584,7 @@ class SimulationConfigGenerator:
 - work_hours (int数组): 工作时段
 - reasoning (string): 简要说明为什么这样配置"""
 
-        system_prompt = "你是社交媒体模拟专家。返回纯JSON格式，时间配置需符合中国人作息习惯。"
+        system_prompt = "당신은 소셜 미디어 시뮬레이션 전문가입니다. 순수 JSON 형식으로 반환하세요. 시간 설정은 한국인의 생활 패턴에 맞춰야 합니다."
         
         try:
             return self._call_llm_with_retry(prompt, system_prompt)
@@ -593,17 +593,17 @@ class SimulationConfigGenerator:
             return self._get_default_time_config(num_entities)
     
     def _get_default_time_config(self, num_entities: int) -> Dict[str, Any]:
-        """获取默认时间配置（中国人作息）"""
+        """기본 시간 설정 (한국인 생활 패턴)"""
         return {
             "total_simulation_hours": 72,
-            "minutes_per_round": 60,  # 每轮1小时，加快时间流速
+            "minutes_per_round": 60,
             "agents_per_hour_min": max(1, num_entities // 15),
             "agents_per_hour_max": max(5, num_entities // 5),
-            "peak_hours": [19, 20, 21, 22],
+            "peak_hours": [20, 21, 22, 23],
             "off_peak_hours": [0, 1, 2, 3, 4, 5],
             "morning_hours": [6, 7, 8],
-            "work_hours": [9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
-            "reasoning": "使用默认中国人作息配置（每轮1小时）"
+            "work_hours": [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
+            "reasoning": "한국인 생활 패턴 기본 설정 (라운드당 1시간)"
         }
     
     def _parse_time_config(self, result: Dict[str, Any], num_entities: int) -> TimeSimulationConfig:
@@ -671,36 +671,42 @@ class SimulationConfigGenerator:
         # 使用配置的上下文截断长度
         context_truncated = context[:self.EVENT_CONFIG_CONTEXT_LENGTH]
         
-        prompt = f"""基于以下模拟需求，生成事件配置。
+        prompt = f"""다음 시뮬레이션 요구사항을 기반으로 이벤트 설정을 생성하세요.
 
-模拟需求: {simulation_requirement}
+시뮬레이션 요구사항: {simulation_requirement}
 
 {context_truncated}
 
-## 可用实体类型及示例
+## 사용 가능한 엔티티 유형 및 예시
 {type_info}
 
-## 任务
-请生成事件配置JSON：
-- 提取热点话题关键词
-- 描述舆论发展方向
-- 设计初始帖子内容，**每个帖子必须指定 poster_type（发布者类型）**
+## 작업
+이벤트 설정 JSON을 생성하세요:
+- 핫 토픽 키워드 추출
+- 여론 전개 방향 서술
+- 초기 게시글 내용 설계: **각 게시글에 poster_type(게시자 유형)을 반드시 지정**
 
-**重要**: poster_type 必须从上面的"可用实体类型"中选择，这样初始帖子才能分配给合适的 Agent 发布。
-例如：官方声明应由 Official/University 类型发布，新闻由 MediaOutlet 发布，学生观点由 Student 发布。
+**초기 게시글 작성 규칙 (매우 중요)**:
+- 실제 한국 SNS/커뮤니티(트위터, 커뮤니티 게시판, 유튜브 댓글)의 말투를 사용하세요
+- 설문조사나 교과서 같은 정중한 질문은 절대 하지 마세요
+- 각 Agent의 성격과 입장에 맞는 감정적이고 편향된 의견을 표현하세요
+- 예시: "오세훈은 그동안 뭐 했냐 솔직히", "정원오 진짜 기대된다 드디어 서울 바뀌나", "와 이번 선거 역대급 빅매치네"
+- 뉴스 기관은 기사 헤드라인 스타일로, 일반인은 반말/구어체로, 정치인은 공식 성명 스타일로 작성
 
-返回JSON格式（不要markdown）：
+**중요**: poster_type은 반드시 위의 "사용 가능한 엔티티 유형"에서 선택하세요.
+
+JSON 형식으로 반환 (마크다운 없이):
 {{
-    "hot_topics": ["关键词1", "关键词2", ...],
-    "narrative_direction": "<舆论发展方向描述>",
+    "hot_topics": ["키워드1", "키워드2", ...],
+    "narrative_direction": "<여론 전개 방향 설명>",
     "initial_posts": [
-        {{"content": "帖子内容", "poster_type": "实体类型（必须从可用类型中选择）"}},
+        {{"content": "게시글 내용", "poster_type": "엔티티 유형 (사용 가능한 유형에서 선택)"}},
         ...
     ],
-    "reasoning": "<简要说明>"
+    "reasoning": "<간략 설명>"
 }}"""
 
-        system_prompt = "你是舆论分析专家。返回纯JSON格式。注意 poster_type 必须精确匹配可用实体类型。"
+        system_prompt = "당신은 한국 정치 여론 분석 전문가입니다. 순수 JSON 형식으로 반환하세요. poster_type은 사용 가능한 엔티티 유형과 정확히 일치해야 합니다. 모든 텍스트는 한국어로 작성하세요."
         
         try:
             return self._call_llm_with_retry(prompt, system_prompt)
@@ -827,43 +833,44 @@ class SimulationConfigGenerator:
                 "summary": e.summary[:summary_len] if e.summary else ""
             })
         
-        prompt = f"""基于以下信息，为每个实体生成社交媒体活动配置。
+        prompt = f"""다음 정보를 기반으로 각 엔티티의 소셜 미디어 활동 설정을 생성하세요.
 
-模拟需求: {simulation_requirement}
+시뮬레이션 요구사항: {simulation_requirement}
 
-## 实体列表
+## 엔티티 목록
 ```json
 {json.dumps(entity_list, ensure_ascii=False, indent=2)}
 ```
 
-## 任务
-为每个实体生成活动配置，注意：
-- **时间符合中国人作息**：凌晨0-5点几乎不活动，晚间19-22点最活跃
-- **官方机构**（University/GovernmentAgency）：活跃度低(0.1-0.3)，工作时间(9-17)活动，响应慢(60-240分钟)，影响力高(2.5-3.0)
-- **媒体**（MediaOutlet）：活跃度中(0.4-0.6)，全天活动(8-23)，响应快(5-30分钟)，影响力高(2.0-2.5)
-- **个人**（Student/Person/Alumni）：活跃度高(0.6-0.9)，主要晚间活动(18-23)，响应快(1-15分钟)，影响力低(0.8-1.2)
-- **公众人物/专家**：活跃度中(0.4-0.6)，影响力中高(1.5-2.0)
+## 작업
+각 엔티티의 활동 설정을 생성하세요. 주의사항:
+- **한국인 생활 패턴 반영**: 새벽 0-5시 거의 비활성, 저녁 20-23시 가장 활발
+- **공공기관** (GovernmentAgency 등): 활성도 낮음(0.1-0.3), 업무시간(9-18) 활동, 응답 느림(60-240분), 영향력 높음(2.5-3.0)
+- **언론** (MediaOutlet): 활성도 중간(0.4-0.6), 전일 활동(7-23), 응답 빠름(5-30분), 영향력 높음(2.0-2.5)
+- **일반인** (Person/Voter 등): 활성도 높음(0.6-0.9), 주로 저녁 활동(18-23), 응답 빠름(1-15분), 영향력 낮음(0.8-1.2)
+- **정치인/후보**: 활성도 중간(0.4-0.6), 영향력 높음(2.0-3.0), 입장이 명확(supportive 또는 opposing)
+- **공인/전문가**: 활성도 중간(0.4-0.6), 영향력 중상(1.5-2.0)
 
-返回JSON格式（不要markdown）：
+JSON 형식으로 반환 (마크다운 없이):
 {{
     "agent_configs": [
         {{
-            "agent_id": <必须与输入一致>,
+            "agent_id": <입력과 반드시 일치>,
             "activity_level": <0.0-1.0>,
-            "posts_per_hour": <发帖频率>,
-            "comments_per_hour": <评论频率>,
-            "active_hours": [<活跃小时列表，考虑中国人作息>],
-            "response_delay_min": <最小响应延迟分钟>,
-            "response_delay_max": <最大响应延迟分钟>,
-            "sentiment_bias": <-1.0到1.0>,
+            "posts_per_hour": <게시 빈도>,
+            "comments_per_hour": <댓글 빈도>,
+            "active_hours": [<활동 시간 목록, 한국인 생활 패턴 고려>],
+            "response_delay_min": <최소 응답 지연(분)>,
+            "response_delay_max": <최대 응답 지연(분)>,
+            "sentiment_bias": <-1.0 ~ 1.0>,
             "stance": "<supportive/opposing/neutral/observer>",
-            "influence_weight": <影响力权重>
+            "influence_weight": <영향력 가중치>
         }},
         ...
     ]
 }}"""
 
-        system_prompt = "你是社交媒体行为分析专家。返回纯JSON，配置需符合中国人作息习惯。"
+        system_prompt = "당신은 소셜 미디어 행동 분석 전문가입니다. 순수 JSON으로 반환하세요. 설정은 한국인 생활 패턴에 맞춰야 합니다."
         
         try:
             result = self._call_llm_with_retry(prompt, system_prompt)
