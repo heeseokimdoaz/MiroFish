@@ -193,11 +193,11 @@ class OntologyGenerator:
             {"role": "user", "content": user_message}
         ]
 
-        # LLM 호출
+        # LLM 호출 (긴 JSON 응답을 위해 토큰 충분히 확보)
         result = self.llm_client.chat_json(
             messages=messages,
             temperature=0.3,
-            max_tokens=4096
+            max_tokens=16384
         )
 
         # 검증 및 후처리

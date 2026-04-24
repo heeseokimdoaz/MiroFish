@@ -423,10 +423,8 @@ class ZepToolsService:
     
     def __init__(self, api_key: Optional[str] = None, llm_client: Optional[LLMClient] = None):
         self.api_key = api_key or Config.ZEP_API_KEY
-        if not self.api_key:
-            raise ValueError("ZEP_API_KEY 未配置")
-        
-        self.client = Zep(api_key=self.api_key)
+        from .local_zep import get_client as _get_zep_client
+        self.client = _get_zep_client(api_key=self.api_key)
         # LLM客户端用于InsightForge生成子问题
         self._llm_client = llm_client
         logger.info("ZepToolsService 初始化完成")
@@ -1373,14 +1371,33 @@ JSON 형식의 하위 질문 목록을 반환하세요."""
                     # 不指定platform，API会在twitter和reddit两个平台都采访
                 })
             
-            logger.info(f"调用批量采访API（双平台）: {len(interviews_request)} 个Agent")
-            
-            # 调用 SimulationRunner 的批量采访方法（不传platform，双平台采访）
+            logger.info(f"인터뷰 API 호출 (듀얼 플랫폼): {len(interviews_request)}개 Agent")
+
+            # 시뮬레이션 프로세스가 살아있는지 먼저 확인 — 죽었으면 즉시 실패 처리
+            try:
+                from .simulation_manager import SimulationManager
+                sim_state = SimulationManager().get_simulation(simulation_id)
+                sim_alive = bool(sim_state and getattr(sim_state, 'process_pid', None))
+                if sim_alive:
+                    import os as _os, errno as _errno
+                    try:
+                        _os.kill(sim_state.process_pid, 0)
+                    except (OSError, ProcessLookupError):
+                        sim_alive = False
+            except Exception:
+                sim_alive = False
+
+            if not sim_alive:
+                logger.warning("시뮬레이션 프로세스가 종료된 상태 — 인터뷰 스킵")
+                result.summary = "시뮬레이션 환경이 이미 종료되어 실시간 인터뷰를 진행할 수 없습니다. 다른 도구의 결과를 기반으로 분석을 진행합니다."
+                return result
+
+            # SimulationRunner 배치 인터뷰 호출 (타임아웃 짧게 — 환경 종료 시 빠른 fallback)
             api_result = SimulationRunner.interview_agents_batch(
                 simulation_id=simulation_id,
                 interviews=interviews_request,
-                platform=None,  # 不指定platform，双平台采访
-                timeout=180.0   # 双平台需要更长超时
+                platform=None,
+                timeout=30.0
             )
             
             logger.info(f"采访API返回: {api_result.get('interviews_count', 0)} 个结果, success={api_result.get('success')}")

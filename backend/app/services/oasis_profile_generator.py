@@ -197,16 +197,15 @@ class OasisProfileGenerator:
             base_url=self.base_url
         )
         
-        # Zep客户端用于检索丰富上下文
+        # Zep 클라이언트 (로컬 또는 클라우드)
         self.zep_api_key = zep_api_key or Config.ZEP_API_KEY
-        self.zep_client = None
         self.graph_id = graph_id
-        
-        if self.zep_api_key:
-            try:
-                self.zep_client = Zep(api_key=self.zep_api_key)
-            except Exception as e:
-                logger.warning(f"Zep客户端初始化失败: {e}")
+        try:
+            from .local_zep import get_client as _get_zep_client
+            self.zep_client = _get_zep_client(api_key=self.zep_api_key)
+        except Exception as e:
+            logger.warning(f"Zep 클라이언트 초기화 실패: {e}")
+            self.zep_client = None
     
     def generate_profile_from_entity(
         self, 
@@ -721,6 +720,13 @@ class OasisProfileGenerator:
 - 내용은 엔티티 정보와 일치해야 합니다
 - age는 유효한 정수, gender는 "male" 또는 "female"이어야 합니다
 - 정당 소속이 있는 인물의 경우, persona에 해당 정당에 대한 충성과 지지 성향을 반드시 포함하세요. 같은 당 동료를 공격하거나 비판하는 성향은 절대 부여하지 마세요. 비판 대상은 상대 정당이어야 합니다.
+
+**사실 기반 엄격 규칙 (가장 중요)**:
+- 엔티티 요약(entity_summary) 및 컨텍스트 정보에 명시된 실제 사실만 사용
+- 허위 경력, 가짜 학력, 허구의 일화를 만들어내지 마세요 (특히 실존 인물인 경우)
+- 실존 인물(정치인·후보자·공인)은 시드에 명시된 실제 이력만 기반으로 persona 작성
+- 가상 시민 Agent는 '그럴듯한' 일반 프로필로 작성하되, 특정 실존 단체·지역 소속으로 위조하지 마세요
+- 시드에 명시된 실제 이슈·논란·의혹에 대한 반응·입장만 persona에 반영
 """
 
     def _build_group_persona_prompt(

@@ -1,11 +1,11 @@
 import service, { requestWithRetry } from './index'
 
 /**
- * 开始报告生成
+ * 开始报告生成 (retry 없음 — 중복 리포트 생성 방지, 단일 요청만)
  * @param {Object} data - { simulation_id, force_regenerate? }
  */
 export const generateReport = (data) => {
-  return requestWithRetry(() => service.post('/api/report/generate', data), 3, 1000)
+  return service.post('/api/report/generate', data, { timeout: 30000 })
 }
 
 /**

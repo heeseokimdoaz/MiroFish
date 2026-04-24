@@ -652,24 +652,40 @@ const handleNextStep = async () => {
   isGeneratingReport.value = true
   addLog('리포트 생성 시작 중...')
 
+  // 30초 타임아웃 — /report/generate는 즉시 report_id를 반환해야 함 (실제 생성은 백그라운드)
+  const timeoutId = setTimeout(() => {
+    if (isGeneratingReport.value) {
+      addLog('⚠ 리포트 생성 API 응답 지연 (30초 초과) — 다시 시도하세요')
+      isGeneratingReport.value = false
+    }
+  }, 30000)
+
   try {
     const res = await generateReport({
       simulation_id: props.simulationId,
       force_regenerate: true
     })
 
-    if (res.success && res.data) {
+    clearTimeout(timeoutId)
+
+    if (res && res.success && res.data) {
       const reportId = res.data.report_id
       addLog(`✓ 리포트 생성 작업 시작됨: ${reportId}`)
 
       // 부모 컴포넌트에 다음 단계 진입 알림, reportId 전달
       emit('next-step', { reportId })
+
+      // 성공 시에도 버튼 상태 초기화 (부모가 이미 Step4로 전환하므로 시각적 영향 없음)
+      isGeneratingReport.value = false
     } else {
-      addLog(`✗ 리포트 생성 시작 실패: ${res.error || '알 수 없는 오류'}`)
+      const errMsg = res?.error || res?.message || '알 수 없는 오류'
+      addLog(`✗ 리포트 생성 시작 실패: ${errMsg}`)
       isGeneratingReport.value = false
     }
   } catch (err) {
-    addLog(`✗ 리포트 생성 시작 오류: ${err.message}`)
+    clearTimeout(timeoutId)
+    const errMsg = err?.response?.data?.error || err?.message || '네트워크 오류'
+    addLog(`✗ 리포트 생성 시작 오류: ${errMsg}`)
     isGeneratingReport.value = false
   }
 }

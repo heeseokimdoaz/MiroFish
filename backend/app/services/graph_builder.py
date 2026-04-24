@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from zep_cloud.client import Zep
 from zep_cloud import EpisodeData, EntityEdgeSourceTarget
 
+from .local_zep import get_client as _get_zep_client
 from ..config import Config
 from ..models.task import TaskManager, TaskStatus
 from ..utils.zep_paging import fetch_all_nodes, fetch_all_edges
@@ -44,10 +45,7 @@ class GraphBuilderService:
     
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or Config.ZEP_API_KEY
-        if not self.api_key:
-            raise ValueError("ZEP_API_KEY 未配置")
-        
-        self.client = Zep(api_key=self.api_key)
+        self.client = _get_zep_client(api_key=self.api_key)
         self.task_manager = TaskManager()
     
     def build_graph_async(
@@ -55,9 +53,9 @@ class GraphBuilderService:
         text: str,
         ontology: Dict[str, Any],
         graph_name: str = "MiroFish Graph",
-        chunk_size: int = 500,
-        chunk_overlap: int = 50,
-        batch_size: int = 3
+        chunk_size: int = 2000,
+        chunk_overlap: int = 100,
+        batch_size: int = 10
     ) -> str:
         """
         异步构建图谱
@@ -328,8 +326,8 @@ class GraphBuilderService:
                         if ep_uuid:
                             episode_uuids.append(ep_uuid)
                 
-                # 避免请求过快
-                time.sleep(1)
+                # LocalZep은 로컬 처리라 rate limit 대기 불필요
+                # (Zep Cloud 사용 시에만 의미)
                 
             except Exception as e:
                 if progress_callback:
